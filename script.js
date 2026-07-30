@@ -9,6 +9,9 @@ const WORKER_URL = "https://your-worker-url.workers.dev/";
 const SYSTEM_PROMPT =
   "You are a helpful L'Oréal beauty assistant. Only answer questions about L'Oréal products, routines, skincare, makeup, haircare, fragrance, or beauty recommendations. If a user asks something unrelated, politely say you can only help with L'Oréal beauty topics.";
 
+const promptButtons = document.querySelectorAll(".prompt-pill");
+const clearChatButton = document.getElementById("clearChatBtn");
+
 let conversation = [{ role: "system", content: SYSTEM_PROMPT }];
 let userName = "friend";
 
@@ -19,6 +22,20 @@ function addMessage(role, content) {
   const bubble = document.createElement("div");
   bubble.className = "bubble";
   bubble.textContent = content;
+
+  messageWrapper.appendChild(bubble);
+  chatWindow.appendChild(messageWrapper);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+  return messageWrapper;
+}
+
+function addTypingIndicator() {
+  const messageWrapper = document.createElement("div");
+  messageWrapper.className = "message assistant";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
 
   messageWrapper.appendChild(bubble);
   chatWindow.appendChild(messageWrapper);
@@ -59,7 +76,27 @@ function rememberName(text) {
   }
 }
 
+function isWorkerConfigured() {
+  return !WORKER_URL.includes("your-worker-url");
+}
+
+function fillPrompt(prompt) {
+  userInput.value = prompt;
+  userInput.focus();
+}
+
 showGreeting();
+
+promptButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    fillPrompt(button.dataset.prompt);
+  });
+});
+
+clearChatButton.addEventListener("click", () => {
+  conversation = [{ role: "system", content: SYSTEM_PROMPT }];
+  showGreeting();
+});
 
 /* Handle form submit */
 chatForm.addEventListener("submit", async (event) => {
@@ -82,12 +119,21 @@ chatForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  const loadingMessage = addMessage("assistant", "Thinking...");
+  const loadingMessage = addTypingIndicator();
   const sendButton = document.getElementById("sendBtn");
   sendButton.disabled = true;
   userInput.disabled = true;
 
   conversation.push({ role: "user", content: userMessage });
+
+  if (!isWorkerConfigured()) {
+    loadingMessage.querySelector(".bubble").innerHTML =
+      "Please update the Cloudflare Worker URL in script.js so the assistant can reply.";
+    sendButton.disabled = false;
+    userInput.disabled = false;
+    userInput.focus();
+    return;
+  }
 
   try {
     const response = await fetch(WORKER_URL, {
