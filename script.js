@@ -35,7 +35,8 @@ function addTypingIndicator() {
 
   const bubble = document.createElement("div");
   bubble.className = "bubble";
-  bubble.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
+  bubble.innerHTML =
+    '<span class="typing-dots"><span></span><span></span><span></span></span>';
 
   messageWrapper.appendChild(bubble);
   chatWindow.appendChild(messageWrapper);
